@@ -1,0 +1,28 @@
+{
+  "name": "mageparser",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Magic language",
+  "main": "index.js",
+  "scripts": {
+    "build": "nearleyc ./src/dsl.ne -o ./src/dsl.cjs",
+    "repl-help": "nearley-test -h",
+    "repl": "npm run build && cat ./src/common.txt - | nearley-test ./src/dsl.cjs",
+    "repl-raw": "npm run build && nearley-test ./src/dsl.cjs",
+    "test": "npm run build && vitest"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@vitest/coverage-v8": "^3.0.8",
+    "eslint": "^9.22.0",
+    "globals": "^16.0.0",
+    "nearley": "^2.20.1",
+    "supertest": "^7.0.0",
+    "vitest": "^3.0.8"
+  },
+  "dependencies": {
+    "moo": "^0.5.2"
+  }
+}

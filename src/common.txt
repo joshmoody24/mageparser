@@ -1,0 +1,33 @@
+# The only primitives are add(x, y), mul(x, y), sign(x), prev(x), next(x), and the integer 1.
+# Everything else must be defined in terms of these primitives.
+
+bind ZERO to (prev 1) in
+bind TWO to (next 1) in
+bind THREE to (next TWO) in
+bind FOUR to (next THREE) in
+bind FIVE to (next FOUR) in
+
+bind NEG_ONE to (prev ZERO) in
+
+bind SUBTRACT to [x y] -> (add x (mul y NEG_ONE)) in
+bind ABS to [x] -> (mul x (sign x)) in
+bind TRUTHY? to [x] -> (ABS (sign x)) in
+bind ZERO? to [x] -> (SUBTRACT 1 (TRUTHY? x)) in
+bind NOT to ZERO? in
+bind FALSY? to NOT in
+bind TRUE to 1 in
+bind FALSE to ZERO in
+bind IF to [cond xThunk yThunk] -> (add (mul (TRUTHY? cond) xThunk) (mul (FALSY? cond) yThunk)) in
+bind AND to [x y] -> (mul (TRUTHY? x) (TRUTHY? y)) in
+bind OR to [x y] -> (add (TRUTHY? x) (TRUTHY? y)) in
+bind XOR to [x y] -> (SUBTRACT (add (TRUTHY? x) (TRUTHY? y)) (mul (TRUTHY? x) (TRUTHY? y))) in
+bind EQUALS? to [x y] -> (ZERO? (SUBTRACT x y)) in
+bind NOT_EQUALS? to [x y] -> (NOT (EQUALS? x y)) in
+bind GREATER_THAN? to [x y] -> (sign (SUBTRACT x y)) in
+bind GREATER_THAN_OR_EQUAL_TO? to [x y] -> (OR (GREATER_THAN? x y) (EQUALS? x y)) in
+bind LESS_THAN? to [x y] -> (sign (SUBTRACT y x)) in
+bind LESS_THAN_OR_EQUAL_TO? to [x y] -> (OR (LESS_THAN? x y) (EQUALS? x y)) in
+bind POWER to [x y] -> (IF (LESS_THAN_OR_EQUAL_TO? y ZERO) 1 (mul x [] -> (POWER x (SUBTRACT y 1)))) in
+bind DIV to [x y] -> (IF (EQUALS? y ZERO) ZERO (IF (EQUALS? y 1) x (add (DIV x (SUBTRACT y 1)) 1))) in
+
+(IF ONE TWO THREE)
