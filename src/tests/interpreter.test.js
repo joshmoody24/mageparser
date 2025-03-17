@@ -10,356 +10,342 @@ function run(source) {
 // ----------------------------------------------------------------------
 // Shared DSL Definitions (Header)
 // ----------------------------------------------------------------------
-const DSL_HEADER = `# The only primitives are add, mul, sign, neg, and the integer 1.
+const DSL_HEADER = `# The only primitives are subtract, sign, and one.
 # Everything else must be defined in terms of these primitives.
 
-bind NEG_ONE to (neg 1) in
-bind ZERO to (add 1 NEG_ONE) in
-bind NEXT to [x] -> (add x 1) in
-bind PREV to [x] -> (add x NEG_ONE) in
-bind TWO to (NEXT 1) in
-bind THREE to (NEXT TWO) in
-bind FOUR to (NEXT THREE) in
-bind FIVE to (NEXT FOUR) in
+bind zero to (subtract one one) in
+bind negative to [x] -> (subtract zero x) in
+bind add to [x y] -> (subtract x (negative y)) in
 
+bind next to [x] -> (add x one) in
+bind prev to [x] -> (subtract x one) in
 
-bind SUBTRACT to [x y] -> (add x (mul y NEG_ONE)) in
-bind ABS to [x] -> (mul x (sign x)) in
-bind TRUTHY? to [x] -> (ABS (sign x)) in
-bind ZERO? to [x] -> (SUBTRACT 1 (TRUTHY? x)) in
-bind NOT to ZERO? in
-bind FALSY? to NOT in
-bind TRUE to 1 in
-bind FALSE to ZERO in
-bind IF to [cond x y] -> (add (mul (TRUTHY? cond) x) (mul (FALSY? cond) y)) in
-bind AND to [x y] -> (mul (TRUTHY? x) (TRUTHY? y)) in
-bind OR to [x y] -> (add (TRUTHY? x) (TRUTHY? y)) in
-bind XOR to [x y] -> (SUBTRACT (add (TRUTHY? x) (TRUTHY? y)) (mul (TRUTHY? x) (TRUTHY? y))) in
-bind EQUALS? to [x y] -> (ZERO? (SUBTRACT x y)) in
-bind NOT_EQUALS? to [x y] -> (NOT (EQUALS? x y)) in
-bind GREATER_THAN? to [x y] -> (EQUALS? (sign (SUBTRACT x y)) 1) in
-bind GREATER_THAN_OR_EQUAL_TO? to [x y] -> (OR (GREATER_THAN? x y) (EQUALS? x y)) in
-bind LESS_THAN? to [x y] -> (EQUALS? (sign (SUBTRACT x y)) NEG_ONE) in
-bind LESS_THAN_OR_EQUAL_TO? to [x y] -> (OR (LESS_THAN? x y) (EQUALS? x y)) in
-bind POWER to [x y] -> (IF (LESS_THAN_OR_EQUAL_TO? y ZERO) 1 (mul x (POWER x (SUBTRACT y 1)))) in
+bind two to (next one) in
+bind three to (next two) in
+bind four to (next three) in
+bind five to (next four) in
+bind six to (next five) in
+bind seven to (next six) in
+bind eight to (next seven) in
+bind nine to (next eight) in
+bind ten to (next nine) in
 
-bind POWER to [x y] ->  (mul    (IF (LESS_THAN_OR_EQUAL_TO? y ZERO) 1 x)    [] -> (IF (LESS_THAN_OR_EQUAL_TO? y ZERO) 1 (POWER x (SUBTRACT y 1)))) in
-bind DIV to [x y] -> (IF (EQUALS? y ZERO) ZERO (IF (EQUALS? y 1) x (add (DIV x (SUBTRACT y 1)) 1))) in`;
+bind true to one in
+bind false to zero in
+
+bind zero? to [x] -> (if x zero one) in
+bind multiply to [x y] -> (if (or (zero? x) (zero? y)) zero (if (gt? y zero) (add x (multiply x (subtract y one))) (subtract (multiply x (add y one)) x))) in
+bind abs to [x] -> (if (lt? x zero) (negative x) x) in
+bind truthy? to [x] -> (abs (sign x)) in
+bind not to zero? in
+bind falsy? to not in
+
+bind and to [x y] -> (multiply (truthy? x) (truthy? y)) in
+bind or to [x y] -> (truthy? (add (truthy? x) (truthy? y))) in
+bind xor to [x y] -> (subtract (or x y) (and x y)) in
+
+bind eq? to [x y] -> (zero? (subtract x y)) in
+bind gt? to [x y] -> (eq? (sign (subtract x y)) one) in
+bind gte? to [x y] -> (or (gt? x y) (eq? x y)) in
+bind lt? to [x y] -> (eq? (sign (subtract x y)) (negative one)) in
+bind lte? to [x y] -> (or (lt? x y) (eq? x y)) in
+
+bind power to [x y] -> (if (lte? y zero) one (multiply x (power x (subtract y one)))) in
+
+bind div-helper to [x y] -> (if (lt? x y) zero (next (div-helper (subtract x y) y))) in
+bind div to [x y] -> (if (eq? y zero) zero (multiply (div-helper (abs x) (abs y)) (if (eq? (multiply (sign x) (sign y)) one) one (negative one)))) in
+`;
 
 // ----------------------------------------------------------------------
 // Tests
 // ----------------------------------------------------------------------
 
+// ----------------------------------------------------------------------
+// Test Suite
+// ----------------------------------------------------------------------
+describe("DSL Primitive Numbers", () => {
+  test("one equals 1", () => {
+    expect(run(DSL_HEADER + "\none")).toBe(1);
+  });
+
+  test("zero equals 0", () => {
+    expect(run(DSL_HEADER + "\nzero")).toBe(0);
+  });
+
+  test("two equals 2", () => {
+    expect(run(DSL_HEADER + "\ntwo")).toBe(2);
+  });
+
+  test("three equals 3", () => {
+    expect(run(DSL_HEADER + "\nthree")).toBe(3);
+  });
+
+  test("four equals 4", () => {
+    expect(run(DSL_HEADER + "\nfour")).toBe(4);
+  });
+
+  test("five equals 5", () => {
+    expect(run(DSL_HEADER + "\nfive")).toBe(5);
+  });
+
+  // Assume that the DSL defines numbers up to ten.
+  test("six equals 6", () => {
+    expect(run(DSL_HEADER + "\nsix")).toBe(6);
+  });
+
+  test("seven equals 7", () => {
+    expect(run(DSL_HEADER + "\nseven")).toBe(7);
+  });
+
+  test("eight equals 8", () => {
+    expect(run(DSL_HEADER + "\neight")).toBe(8);
+  });
+
+  test("nine equals 9", () => {
+    expect(run(DSL_HEADER + "\nnine")).toBe(9);
+  });
+
+  test("ten equals 10", () => {
+    expect(run(DSL_HEADER + "\nten")).toBe(10);
+  });
+});
+
 describe("Built-in Functions", () => {
-  describe("add", () => {
-    test("2 + 3 = 5", () => {
-      expect(run(DSL_HEADER + "\n(add (NEXT 1) (NEXT (NEXT 1)))")).toBe(5);
-    });
-    test("(-2) + (-3) = -5", () => {
-      expect(
-        run(
-          DSL_HEADER +
-            "\n(add (PREV (PREV (PREV 1))) (PREV (PREV (PREV (PREV 1)))))",
-        ),
-      ).toBe(-5);
-    });
-    test("3 + (-1) = 2", () => {
-      expect(run(DSL_HEADER + "\n(add (NEXT (NEXT 1)) (PREV (PREV 1)))")).toBe(
-        2,
-      );
-    });
+  // Tests for subtract, sign, and if.
+  test("five minus three equals 2", () => {
+    expect(run(DSL_HEADER + "\n(subtract five three)")).toBe(2);
   });
 
-  describe("mul", () => {
-    test("2 * 3 = 6", () => {
-      expect(run(DSL_HEADER + "\n(mul (NEXT 1) (NEXT (NEXT 1)))")).toBe(6);
-    });
-    test("(-1) * 3 = -3", () => {
-      expect(run(DSL_HEADER + "\n(mul (PREV (PREV 1)) (NEXT (NEXT 1)))")).toBe(
-        -3,
-      );
-    });
-    test("2 * (-2) = -4", () => {
-      expect(run(DSL_HEADER + "\n(mul (NEXT 1) (PREV (PREV (PREV 1))))")).toBe(
-        -4,
-      );
-    });
+  test("three minus five equals -2", () => {
+    expect(run(DSL_HEADER + "\n(subtract three five)")).toBe(-2);
   });
 
-  describe("sign", () => {
-    test("sign(3) = 1", () => {
-      expect(run(DSL_HEADER + "\n(sign (NEXT (NEXT 1)))")).toBe(1);
-    });
-    test("sign(0) = 0", () => {
-      expect(run(DSL_HEADER + "\n(sign (PREV 1))")).toBe(0);
-    });
-    test("sign(-2) = -1", () => {
-      expect(run(DSL_HEADER + "\n(sign (PREV (PREV (PREV 1))))")).toBe(-1);
-    });
+  test("five minus five equals 0", () => {
+    expect(run(DSL_HEADER + "\n(subtract five five)")).toBe(0);
   });
 
-  describe("PREV", () => {
-    test("PREV 1 = 0", () => {
-      expect(run(DSL_HEADER + "\n(PREV 1)")).toBe(0);
-    });
+  test("sign of five equals 1", () => {
+    expect(run(DSL_HEADER + "\n(sign five)")).toBe(1);
   });
 
-  describe("next", () => {
-    test("NEXT 1 = 2", () => {
-      expect(run(DSL_HEADER + "\n(NEXT 1)")).toBe(2);
-    });
+  test("sign of zero equals 0", () => {
+    expect(run(DSL_HEADER + "\n(sign zero)")).toBe(0);
+  });
+
+  test("sign of (negative three) equals -1", () => {
+    expect(run(DSL_HEADER + "\n(sign (negative three))")).toBe(-1);
+  });
+
+  test("if with true returns first branch", () => {
+    expect(run(DSL_HEADER + "\n(if true three four)")).toBe(3);
+  });
+
+  test("if with false returns second branch", () => {
+    expect(run(DSL_HEADER + "\n(if false three four)")).toBe(4);
+  });
+
+  test("if with nonzero condition returns first branch", () => {
+    expect(run(DSL_HEADER + "\n(if five seven eight)")).toBe(7);
+  });
+
+  test("if with zero condition returns second branch", () => {
+    expect(run(DSL_HEADER + "\n(if zero seven eight)")).toBe(8);
   });
 });
 
 describe("Derived Functions", () => {
-  describe("ZERO", () => {
-    test("ZERO = 0", () => {
-      expect(run(DSL_HEADER + "\nZERO")).toBe(0);
-    });
+  // negative
+  test("negative three equals -3", () => {
+    expect(run(DSL_HEADER + "\n(negative three)")).toBe(-3);
   });
 
-  describe("TWO", () => {
-    test("TWO = 2", () => {
-      expect(run(DSL_HEADER + "\nTWO")).toBe(2);
-    });
+  // add
+  test("two plus three equals 5", () => {
+    expect(run(DSL_HEADER + "\n(add two three)")).toBe(5);
   });
 
-  describe("THREE", () => {
-    test("THREE = 3", () => {
-      expect(run(DSL_HEADER + "\nTHREE")).toBe(3);
-    });
+  // next and prev
+  test("next of one equals 2", () => {
+    expect(run(DSL_HEADER + "\n(next one)")).toBe(2);
   });
 
-  describe("FOUR", () => {
-    test("FOUR = 4", () => {
-      expect(run(DSL_HEADER + "\nFOUR")).toBe(4);
-    });
+  test("prev of one equals 0", () => {
+    expect(run(DSL_HEADER + "\n(prev one)")).toBe(0);
   });
 
-  describe("FIVE", () => {
-    test("FIVE = 5", () => {
-      expect(run(DSL_HEADER + "\nFIVE")).toBe(5);
-    });
+  // zero?
+  test("zero? of zero is true", () => {
+    expect(run(DSL_HEADER + "\n(zero? zero)")).toBe(1);
   });
 
-  describe("NEG_ONE", () => {
-    test("NEG_ONE = -1", () => {
-      expect(run(DSL_HEADER + "\nNEG_ONE")).toBe(-1);
-    });
+  test("zero? of two is false", () => {
+    expect(run(DSL_HEADER + "\n(zero? two)")).toBe(0);
   });
 
-  describe("SUBTRACT", () => {
-    test("3 - 2 = 1", () => {
-      // (NEXT (NEXT 1)) → 3; (NEXT 1) → 2.
-      expect(run(DSL_HEADER + "\n(SUBTRACT (NEXT (NEXT 1)) (NEXT 1))")).toBe(1);
-    });
-    test("-1 - 3 = -4", () => {
-      expect(
-        run(DSL_HEADER + "\n(SUBTRACT (PREV (PREV 1)) (NEXT (NEXT 1)))"),
-      ).toBe(-4);
-    });
+  // multiply
+  test("two multiplied by three equals six", () => {
+    expect(run(DSL_HEADER + "\n(multiply two three)")).toBe(6);
   });
 
-  describe("ABS", () => {
-    test("ABS(3) = 3", () => {
-      expect(run(DSL_HEADER + "\n(ABS (NEXT (NEXT 1)))")).toBe(3);
-    });
-    test("ABS(-2) = 2", () => {
-      expect(run(DSL_HEADER + "\n(ABS (PREV (PREV (PREV 1))))")).toBe(2);
-    });
-    test("ABS(0) = 0", () => {
-      expect(run(DSL_HEADER + "\n(ABS (PREV 1))")).toBe(0);
-    });
+  test("negative one multiplied by three equals -3", () => {
+    expect(run(DSL_HEADER + "\n(multiply (negative one) three)")).toBe(-3);
   });
 
-  describe("TRUTHY?", () => {
-    test("TRUTHY?(3) = 1", () => {
-      expect(run(DSL_HEADER + "\n(TRUTHY? (NEXT (NEXT 1)))")).toBe(1);
-    });
-    test("TRUTHY?(-1) = 1", () => {
-      expect(run(DSL_HEADER + "\n(TRUTHY? (PREV (PREV 1)))")).toBe(1);
-    });
-    test("TRUTHY?(0) = 0", () => {
-      expect(run(DSL_HEADER + "\n(TRUTHY? (PREV 1))")).toBe(0);
-    });
+  test("two multiplied by negative two equals -4", () => {
+    expect(run(DSL_HEADER + "\n(multiply two (negative two))")).toBe(-4);
   });
 
-  describe("ZERO?", () => {
-    test("ZERO?(2) = 0", () => {
-      expect(run(DSL_HEADER + "\n(ZERO? (NEXT 1))")).toBe(0);
-    });
-    test("ZERO?(0) = 1", () => {
-      expect(run(DSL_HEADER + "\n(ZERO? (PREV 1))")).toBe(1);
-    });
+  // abs
+  test("absolute value of three is three", () => {
+    expect(run(DSL_HEADER + "\n(abs three)")).toBe(3);
   });
 
-  describe("NOT", () => {
-    test("NOT(2) = 0", () => {
-      expect(run(DSL_HEADER + "\n(NOT (NEXT 1))")).toBe(0);
-    });
-    test("NOT(0) = 1", () => {
-      expect(run(DSL_HEADER + "\n(NOT (PREV 1))")).toBe(1);
-    });
+  test("absolute value of negative two is two", () => {
+    expect(run(DSL_HEADER + "\n(abs (negative two))")).toBe(2);
   });
 
-  describe("FALSY?", () => {
-    test("FALSY?(2) = 0", () => {
-      expect(run(DSL_HEADER + "\n(FALSY? (NEXT 1))")).toBe(0);
-    });
-    test("FALSY?(0) = 1", () => {
-      expect(run(DSL_HEADER + "\n(FALSY? (PREV 1))")).toBe(1);
-    });
+  test("absolute value of zero is zero", () => {
+    expect(run(DSL_HEADER + "\n(abs zero)")).toBe(0);
   });
 
-  describe("TRUE", () => {
-    test("TRUE = 1", () => {
-      expect(run(DSL_HEADER + "\nTRUE")).toBe(1);
-    });
+  // truthy? and falsy?
+  test("truthy? of three is true", () => {
+    expect(run(DSL_HEADER + "\n(truthy? three)")).toBe(1);
   });
 
-  describe("FALSE", () => {
-    test("FALSE = 0", () => {
-      expect(run(DSL_HEADER + "\nFALSE")).toBe(0);
-    });
+  test("truthy? of zero is false", () => {
+    expect(run(DSL_HEADER + "\n(truthy? zero)")).toBe(0);
   });
 
-  describe("IF", () => {
-    test("IF(true, THREE, FOUR) = THREE", () => {
-      expect(run(DSL_HEADER + "\n(IF (NEXT 1) THREE FOUR)")).toBe(3);
-    });
-    test("IF(false, THREE, FOUR) = FOUR", () => {
-      expect(run(DSL_HEADER + "\n(IF (PREV 1) THREE FOUR)")).toBe(4);
-    });
+  test("not of true equals false", () => {
+    expect(run(DSL_HEADER + "\n(not true)")).toBe(0);
   });
 
-  describe("AND", () => {
-    test("AND(true, true) = 1", () => {
-      expect(run(DSL_HEADER + "\n(AND (NEXT 1) (NEXT 1))")).toBe(1);
-    });
-    test("AND(false, true) = 0", () => {
-      expect(run(DSL_HEADER + "\n(AND (PREV 1) (NEXT 1))")).toBe(0);
-    });
+  test("not of false equals true", () => {
+    expect(run(DSL_HEADER + "\n(not false)")).toBe(1);
   });
 
-  describe("OR", () => {
-    test("OR(false, true) = 1", () => {
-      expect(run(DSL_HEADER + "\n(OR (PREV 1) (NEXT 1))")).toBe(1);
-    });
-    test("OR(true, true) = 2", () => {
-      expect(run(DSL_HEADER + "\n(OR (NEXT 1) (NEXT 1))")).toBe(2);
-    });
-    test("OR(false, false) = 0", () => {
-      expect(run(DSL_HEADER + "\n(OR (PREV 1) (PREV 1))")).toBe(0);
-    });
+  test("falsy? of zero equals true", () => {
+    expect(run(DSL_HEADER + "\n(falsy? zero)")).toBe(1);
   });
 
-  describe("XOR", () => {
-    test("XOR(true, false) = 1", () => {
-      expect(run(DSL_HEADER + "\n(XOR (NEXT 1) (PREV 1))")).toBe(1);
-    });
-    test("XOR(true, true) = 1", () => {
-      expect(run(DSL_HEADER + "\n(XOR (NEXT 1) (NEXT 1))")).toBe(1);
-    });
-    test("XOR(false, false) = 0", () => {
-      expect(run(DSL_HEADER + "\n(XOR (PREV 1) (PREV 1))")).toBe(0);
-    });
+  test("falsy? of three equals false", () => {
+    expect(run(DSL_HEADER + "\n(falsy? three)")).toBe(0);
   });
 
-  describe("EQUALS?", () => {
-    test("EQUALS?(2, 2) = 1", () => {
-      expect(run(DSL_HEADER + "\n(EQUALS? (NEXT 1) (NEXT 1))")).toBe(1);
-    });
-    test("EQUALS?(2, 3) = 0", () => {
-      expect(run(DSL_HEADER + "\n(EQUALS? (NEXT 1) (NEXT (NEXT 1)))")).toBe(0);
-    });
+  // Logical operations: and, or, xor
+  test("and of true and true equals true", () => {
+    expect(run(DSL_HEADER + "\n(and true true)")).toBe(1);
   });
 
-  describe("NOT_EQUALS?", () => {
-    test("NOT_EQUALS?(2, 2) = 0", () => {
-      expect(run(DSL_HEADER + "\n(NOT_EQUALS? (NEXT 1) (NEXT 1))")).toBe(0);
-    });
-    test("NOT_EQUALS?(2, 3) = 1", () => {
-      expect(run(DSL_HEADER + "\n(NOT_EQUALS? (NEXT 1) (NEXT (NEXT 1)))")).toBe(
-        1,
-      );
-    });
+  test("and of true and false equals false", () => {
+    expect(run(DSL_HEADER + "\n(and true false)")).toBe(0);
   });
 
-  describe("GREATER_THAN?", () => {
-    test("GREATER_THAN?(3, 2) = 1", () => {
-      expect(
-        run(DSL_HEADER + "\n(GREATER_THAN? (NEXT (NEXT 1)) (NEXT 1))"),
-      ).toBe(1);
-    });
-    test("GREATER_THAN?(2, 3) = 0", () => {
-      expect(
-        run(DSL_HEADER + "\n(GREATER_THAN? (NEXT 1) (NEXT (NEXT 1)))"),
-      ).toBe(0);
-    });
-    test("GREATER_THAN?(2, 2) = 0", () => {
-      expect(run(DSL_HEADER + "\n(GREATER_THAN? (NEXT 1) (NEXT 1))")).toBe(0);
-    });
+  test("or of false and true equals true", () => {
+    expect(run(DSL_HEADER + "\n(or false true)")).toBe(1);
   });
 
-  describe("GREATER_THAN_OR_EQUAL_TO?", () => {
-    test("GREATER_THAN_OR_EQUAL_TO?(3, 2) is truthy", () => {
-      expect(
-        run(
-          DSL_HEADER + "\n(GREATER_THAN_OR_EQUAL_TO? (NEXT (NEXT 1)) (NEXT 1))",
-        ) > 0,
-      ).toBe(true);
-    });
+  test("or of false and false equals false", () => {
+    expect(run(DSL_HEADER + "\n(or false false)")).toBe(0);
   });
 
-  describe("LESS_THAN?", () => {
-    test("LESS_THAN?(2, 3) = 1", () => {
-      expect(run(DSL_HEADER + "\n(LESS_THAN? (NEXT 1) (NEXT (NEXT 1)))")).toBe(
-        1,
-      );
-    });
-    test("LESS_THAN?(3, 2) = 0", () => {
-      expect(run(DSL_HEADER + "\n(LESS_THAN? (NEXT (NEXT 1)) (NEXT 1))")).toBe(
-        0,
-      );
-    });
-    test("LESS_THAN?(2, 2) = 0", () => {
-      expect(run(DSL_HEADER + "\n(LESS_THAN? (NEXT 1) (NEXT 1))")).toBe(0);
-    });
+  test("xor of true and false equals true", () => {
+    expect(run(DSL_HEADER + "\n(xor true false)")).toBe(1);
   });
 
-  describe("LESS_THAN_OR_EQUAL_TO?", () => {
-    test("LESS_THAN_OR_EQUAL_TO?(2, 3) is truthy", () => {
-      expect(
-        run(
-          DSL_HEADER + "\n(LESS_THAN_OR_EQUAL_TO? (NEXT 1) (NEXT (NEXT 1)))",
-        ) > 0,
-      ).toBe(true);
-    });
+  test("xor of true and true equals false", () => {
+    expect(run(DSL_HEADER + "\n(xor true true)")).toBe(0);
   });
 
-  describe("POWER", () => {
-    test("3^2 = 9", () => {
-      expect(run(DSL_HEADER + "\n(POWER (NEXT (NEXT 1)) (NEXT 1))")).toBe(9);
-    });
-    test("3^0 = 1", () => {
-      expect(run(DSL_HEADER + "\n(POWER (NEXT (NEXT 1)) (PREV 1))")).toBe(1);
-    });
+  test("xor of false and false equals false", () => {
+    expect(run(DSL_HEADER + "\n(xor false false)")).toBe(0);
   });
 
-  describe("DIV", () => {
-    test("5 % 0 = 0", () => {
-      expect(
-        run(DSL_HEADER + "\n(DIV (NEXT (NEXT (NEXT (NEXT 1)))) ZERO)"),
-      ).toBe(0);
-    });
-    test("5 % 1 = 1", () => {
-      expect(
-        run(DSL_HEADER + "\n(DIV (NEXT (NEXT (NEXT (NEXT 1)))) (NEXT 1))"),
-      ).toBe(5);
-    });
-    test("5 % 2 = 2", () => {
-      // Note: Here FIVE evaluates to 5 and TWO to 2.
-      expect(run(DSL_HEADER + "\n(DIV FIVE TWO)")).toBe(6);
-    });
+  // Comparison operations
+  test("2 equals 2 is true", () => {
+    expect(run(DSL_HEADER + "\n(eq? two two)")).toBe(1);
+  });
+
+  test("2 equals 3 is false", () => {
+    expect(run(DSL_HEADER + "\n(eq? two three)")).toBe(0);
+  });
+
+  test("3 is greater than 2", () => {
+    expect(run(DSL_HEADER + "\n(gt? three two)")).toBe(1);
+  });
+
+  test("2 is not greater than 3", () => {
+    expect(run(DSL_HEADER + "\n(gt? two three)")).toBe(0);
+  });
+
+  test("3 is greater than or equal to 3", () => {
+    expect(run(DSL_HEADER + "\n(gte? three three)")).toBe(1);
+  });
+
+  test("3 is greater than or equal to 2", () => {
+    expect(run(DSL_HEADER + "\n(gte? three two)")).toBe(1);
+  });
+
+  test("2 is not greater than or equal to 3", () => {
+    expect(run(DSL_HEADER + "\n(gte? two three)")).toBe(0);
+  });
+
+  test("2 is less than 3", () => {
+    expect(run(DSL_HEADER + "\n(lt? two three)")).toBe(1);
+  });
+
+  test("3 is not less than 2", () => {
+    expect(run(DSL_HEADER + "\n(lt? three two)")).toBe(0);
+  });
+
+  test("3 is less than or equal to 3", () => {
+    expect(run(DSL_HEADER + "\n(lte? three three)")).toBe(1);
+  });
+
+  test("2 is less than or equal to 3", () => {
+    expect(run(DSL_HEADER + "\n(lte? two three)")).toBe(1);
+  });
+
+  test("3 is not less than or equal to 2", () => {
+    expect(run(DSL_HEADER + "\n(lte? three two)")).toBe(0);
+  });
+
+  // Exponentiation
+  test("3 raised to the power of 2 equals 9", () => {
+    expect(run(DSL_HEADER + "\n(power three two)")).toBe(9);
+  });
+
+  test("3 raised to the power of 0 equals 1", () => {
+    expect(run(DSL_HEADER + "\n(power three zero)")).toBe(1);
+  });
+
+  test("2 raised to the power of 3 equals 8", () => {
+    expect(run(DSL_HEADER + "\n(power two three)")).toBe(8);
+  });
+
+  // Integer Division (expected to perform truncating division)
+  test("5 divided by 2 equals 2", () => {
+    expect(run(DSL_HEADER + "\n(div five two)")).toBe(2);
+  });
+
+  test("10 divided by 2 equals 5", () => {
+    expect(run(DSL_HEADER + "\n(div ten two)")).toBe(5);
+  });
+
+  test("7 divided by 3 equals 2", () => {
+    expect(run(DSL_HEADER + "\n(div seven three)")).toBe(2);
+  });
+
+  test("5 divided by 1 equals 5", () => {
+    expect(run(DSL_HEADER + "\n(div five one)")).toBe(5);
+  });
+
+  test("negative 5 divided by 2 equals -2", () => {
+    expect(run(DSL_HEADER + "\n(div (negative five) two)")).toBe(-2);
+  });
+
+  test("5 divided by negative 2 equals -2", () => {
+    expect(run(DSL_HEADER + "\n(div five (negative two))")).toBe(-2);
   });
 });

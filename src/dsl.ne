@@ -12,8 +12,7 @@ const lexer = moo.compile({
   lbrack:  "[",
   rbrack:  "]",
   arrow:   "->",
-  number:  "1",
-  identifier: /[a-zA-Z_?][a-zA-Z0-9_?]*/,
+  identifier: /[a-zA-Z_?][a-zA-Z0-9_?\-]*/,
 });
 
 lexer.next = (next => () => {
@@ -45,7 +44,3 @@ function_literal -> %lbrack identifier:* %rbrack %arrow expression
 
 identifier -> %identifier
        {% d => ({ type: "Identifier", name: d[0].value }) %}
-
-integer -> %number
-       {% d => ({ type: "Integer", value: parseInt(d[0].value, 10) }) %}
-

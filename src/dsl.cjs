@@ -16,8 +16,7 @@ const lexer = moo.compile({
   lbrack:  "[",
   rbrack:  "]",
   arrow:   "->",
-  number:  "1",
-  identifier: /[a-zA-Z_?][a-zA-Z0-9_?]*/,
+  identifier: /[a-zA-Z_?][a-zA-Z0-9_?\-]*/,
 });
 
 lexer.next = (next => () => {
@@ -42,8 +41,7 @@ var grammar = {
     {"name": "function_literal$ebnf$1", "symbols": []},
     {"name": "function_literal$ebnf$1", "symbols": ["function_literal$ebnf$1", "identifier"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "function_literal", "symbols": [(lexer.has("lbrack") ? {type: "lbrack"} : lbrack), "function_literal$ebnf$1", (lexer.has("rbrack") ? {type: "rbrack"} : rbrack), (lexer.has("arrow") ? {type: "arrow"} : arrow), "expression"], "postprocess": ([, params, , , body]) => ({ type: "FunctionLiteral", params: params.map(p => p.name), body })},
-    {"name": "identifier", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": d => ({ type: "Identifier", name: d[0].value })},
-    {"name": "integer", "symbols": [(lexer.has("number") ? {type: "number"} : number)], "postprocess": d => ({ type: "Integer", value: parseInt(d[0].value, 10) })}
+    {"name": "identifier", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": d => ({ type: "Identifier", name: d[0].value })}
 ]
   , ParserStart: "main"
 }

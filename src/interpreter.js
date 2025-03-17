@@ -1,7 +1,7 @@
 // interpreter.js
 
 // A set of built-in function names.
-const BUILTINS = new Set(["add", "mul", "sign", "neg"]);
+const BUILTINS = new Set(["subtract", "sign", "if", "one"]);
 
 // Evaluate an AST node in a given environment.
 function evaluate(node, env) {
@@ -25,8 +25,11 @@ function evaluate(node, env) {
           // Prevent rebinding of built-in names.
           if (BUILTINS.has(bindingCandidate.name)) {
             throw new Error(
-              "Cannot rebind built-in function: " + bindingCandidate.name,
+              "Cannot rebind built-in value: " + bindingCandidate.name,
             );
+          }
+          if (env[bindingCandidate.name]) {
+            throw new Error("Cannot rebind value: " + bindingCandidate.name);
           }
           // Evaluate the binding's value and store it in the environment.
           env[bindingCandidate.name] = evaluate(bindingCandidate.value, env);
@@ -42,21 +45,10 @@ function evaluate(node, env) {
     }
 
     case "Identifier": {
-      // Look up the identifier in the current environment.
-      if (node.name in env) {
-        return env[node.name];
-      } else {
-        throw new Error(
-          "Undefined identifier: " +
-            node.name +
-            ". Environment: " +
-            JSON.stringify(env, null, 4),
-        );
-      }
-    }
-
-    case "Integer": {
-      return node.value;
+      if (node.name in env) return env[node.name];
+      throw new Error(
+        `Undefined identifier: ${node.name}. Environment: ${JSON.stringify(env, null, 4)}`,
+      );
     }
 
     case "FunctionLiteral": {
@@ -66,7 +58,7 @@ function evaluate(node, env) {
       const closure = function (...args) {
         if (args.length !== params.length) {
           throw new Error(
-            "Expected " + params.length + " arguments, but got " + args.length,
+            `Expected ${params.length} arguments, but got ${args.length} (${args.join(", ")})`,
           );
         }
         // Create a new environment that inherits from the closure's environment.
@@ -96,7 +88,6 @@ function evaluate(node, env) {
       return null;
 
     case "Call": {
-      // Evaluate the callee. According to the grammar, it is an Identifier.
       const func = evaluate(node.callee, env);
       if (typeof func !== "function") {
         throw new Error(
@@ -105,6 +96,10 @@ function evaluate(node, env) {
         );
       }
       // Evaluate each argument.
+      if (node.callee.name === "if") {
+        const argThunks = node.arguments.map((arg) => () => evaluate(arg, env));
+        return func(...argThunks);
+      }
       const argValues = node.arguments.map((arg) => evaluate(arg, env));
       // Call the function with the evaluated arguments.
       return func(...argValues);
@@ -122,14 +117,8 @@ export default function interpret(ast) {
   const env = Object.create(null);
 
   // Add built-in functions as non-rebindable properties.
-  Object.defineProperty(env, "add", {
-    value: (a, b) => a + b,
-    writable: false,
-    configurable: false,
-    enumerable: true,
-  });
-  Object.defineProperty(env, "mul", {
-    value: (a, b) => a * b,
+  Object.defineProperty(env, "subtract", {
+    value: (a, b) => a - b,
     writable: false,
     configurable: false,
     enumerable: true,
@@ -140,12 +129,17 @@ export default function interpret(ast) {
     configurable: false,
     enumerable: true,
   });
-  Object.defineProperty(env, "neg", {
-    value: (a) => a * -1,
+  Object.defineProperty(env, "if", {
+    value: (c, a, b) => (c() ? a() : b()),
     writable: false,
     configurable: false,
     enumerable: true,
   });
-
+  Object.defineProperty(env, "one", {
+    value: 1,
+    writable: false,
+    configurable: false,
+    enumerable: true,
+  });
   return evaluate(ast, env);
 }
