@@ -1,7 +1,7 @@
 // interpreter.js
 
 // A set of built-in function names.
-const BUILTINS = new Set(["add", "mul", "sign", "prev", "next"]);
+const BUILTINS = new Set(["add", "mul", "sign", "neg"]);
 
 // Evaluate an AST node in a given environment.
 function evaluate(node, env) {
